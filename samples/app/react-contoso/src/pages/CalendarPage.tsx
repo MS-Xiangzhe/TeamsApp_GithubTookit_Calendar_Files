@@ -111,39 +111,6 @@ export const CalendarPage: React.FunctionComponent = () => {
     });
     const CalendarTemplate: React.FC<CalendarTemplateProps> = ({ onEventReceived, dataContext }) => {
 
-        const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-        const [formDataEdit, setFormDataEdit] = useState<{
-            subject: string;
-            body: string;
-            startDate: string;
-            startTime: string;
-            endDate: string;
-            endTime: string;
-            location: string;
-            attendees: Attendee[];
-            isOnlineMeeting: boolean;
-            onlineMeetingProvider: string;
-        }>({
-            subject: '',
-            body: '',
-            startDate: '',
-            startTime: '',
-            endDate: '',
-            endTime: '',
-            location: '',
-            attendees: [],
-            isOnlineMeeting: false,
-            onlineMeetingProvider: 'teamsForBusiness'
-        });
-
-        const handleInputChangeEdit = (field: string, value: any) => {
-            setFormDataEdit(prev => ({
-                ...prev,
-                [field]: value
-            }));
-        };
-
-
         const [isLoading, setIsLoading] = useState(false); //Loading...
         const currentEvent = dataContext.event;
         const [data, setData] = useState(false);
@@ -345,47 +312,6 @@ export const CalendarPage: React.FunctionComponent = () => {
             }
         };
 
-        const handleUpdateSubmit = async () => {
-            const event = {
-                subject: formDataEdit.subject,
-                body: {
-                    contentType: "HTML",
-                    content: formDataEdit.body
-                },
-                start: {
-                    dateTime: `${formDataEdit.startDate}T${formDataCreate.startTime}`,
-                    timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
-                },
-                end: {
-                    dateTime: `${formDataEdit.endDate}T${formDataCreate.endTime}`,
-                    timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
-                },
-                location: {
-                    displayName: formDataEdit.location
-                },
-                attendees: formDataEdit.attendees.map(attendee => ({
-                    emailAddress: {
-                        address: attendee.address,
-                        name: attendee.name,
-                    },
-                    type: attendee.required ? "required" : "optional",
-                })),
-                isOnlineMeeting: formDataEdit.isOnlineMeeting,
-                onlineMeetingProvider: formDataEdit.onlineMeetingProvider
-            };
-
-            try {
-                const provider = Providers.globalProvider;
-                const graph = provider.graph;
-                const response = await graph.api(`/me/calendar/events${currentEvent.id}`)
-                    .patch(event);
-                setIsEditDialogOpen(false);
-                setRefreshKey(prev => prev + 1); // Refresh calendar
-            } catch (error) {
-                console.error('Error creating event:', error);
-            }
-        };
-
         return (
             <div style={{ position: "absolute", right: "0", top: "50%", transform: "translateY(-50%)" }} className="clickButton" >
                 {showClickMe && data.valueOf() && (
@@ -401,160 +327,41 @@ export const CalendarPage: React.FunctionComponent = () => {
                         )}
                     </button>
                 )}
-                <Dialog open={isEditDialogOpen} onOpenChange={(e, data) => setIsEditDialogOpen(data.open)}>
-                    <DialogTrigger>
-                        <Button
-                            icon={<Edit24Regular />}
-                            appearance="subtle"
-                            style={{
-                                padding: '4px'
-                            }}
-                            onClick={() => {
-                                // 预填充当前事件数据
-                                setFormDataEdit({
-                                    subject: currentEvent.subject,
-                                    body: currentEvent.body?.content || '',
-                                    startDate: new Date(currentEvent.start.dateTime).toISOString().split('T')[0],
-                                    startTime: new Date(currentEvent.start.dateTime).toTimeString().split(' ')[0].substring(0, 5),
-                                    endDate: new Date(currentEvent.end.dateTime).toISOString().split('T')[0],
-                                    endTime: new Date(currentEvent.end.dateTime).toTimeString().split(' ')[0].substring(0, 5),
-                                    location: currentEvent.location?.displayName || '',
-                                    attendees: currentEvent.attendees?.map(a => ({
-                                        address: a.emailAddress.address,
-                                        name: a.emailAddress.name,
-                                        required: a.type === "required"
-                                    })) || [],
-                                    isOnlineMeeting: currentEvent.isOnlineMeeting || false,
-                                    onlineMeetingProvider: currentEvent.onlineMeetingProvider || 'teamsForBusiness'
-                                });
-                            }}
-                        />
-                    </DialogTrigger>
-                    <DialogSurface>
-                        <DialogBody>
-                            <DialogTitle>Edit Event</DialogTitle>
-                            <DialogContent>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                                    <Field label="Subject">
-                                        <Input
-                                            value={formDataEdit.subject}
-                                            onChange={(e) => handleInputChangeCreate('subject', e.target.value)}
-                                        />
-                                    </Field>
-                                    <Field label="Description">
-                                        <Textarea
-                                            value={formDataEdit.body}
-                                            onChange={(e) => handleInputChangeCreate('body', e.target.value)}
-                                        />
-                                    </Field>
-                                    <div style={{ display: 'flex', gap: '16px' }}>
-                                        <Field label="Start Date">
-                                            <Input
-                                                type="date"
-                                                value={formDataEdit.startDate}
-                                                onChange={(e) => handleInputChangeCreate('startDate', e.target.value)}
-                                            />
-                                        </Field>
-                                        <Field label="Start Time">
-                                            <Input
-                                                type="time"
-                                                value={formDataEdit.startTime}
-                                                onChange={(e) => handleInputChangeCreate('startTime', e.target.value)}
-                                            />
-                                        </Field>
-                                    </div>
-                                    <div style={{ display: 'flex', gap: '16px' }}>
-                                        <Field label="End Date">
-                                            <Input
-                                                type="date"
-                                                value={formDataEdit.endDate}
-                                                onChange={(e) => handleInputChangeCreate('endDate', e.target.value)}
-                                            />
-                                        </Field>
-                                        <Field label="End Time">
-                                            <Input
-                                                type="time"
-                                                value={formDataEdit.endTime}
-                                                onChange={(e) => handleInputChangeCreate('endTime', e.target.value)}
-                                            />
-                                        </Field>
-                                    </div>
-                                    <Field label="Location">
-                                        <Input
-                                            value={formDataEdit.location}
-                                            onChange={(e) => handleInputChangeCreate('location', e.target.value)}
-                                        />
-                                    </Field>
-                                    <Field label="Required Attendees">
-                                        <PeoplePicker
-                                            defaultSelectedUserIds={
-                                                formDataEdit.attendees
-                                                    .filter(a => a.required)
-                                                    .map(a => a.address)
-                                            }
-                                            selectionChanged={(e) => {
-                                                const peoples = e.detail;
-                                                const attendees: Attendee[] = [];
-                                                for (let people of peoples) {
-                                                    if (people.id && people.displayName) {
-                                                        const obj: Attendee = { address: people.id, name: people.displayName, required: true };
-                                                        attendees.push(obj);
-                                                    }
-                                                }
-                                                handleInputChangeCreate('attendees', attendees);
-                                            }
-                                            }></PeoplePicker>
-                                    </Field>
-                                    <Field label="Optional Attendees">
-                                        <PeoplePicker
-                                            defaultSelectedUserIds={
-                                                formDataEdit.attendees
-                                                    .filter(a => !a.required)
-                                                    .map(a => a.address)
-                                            }
-                                            selectionChanged={(e) => {
-                                                const peoples = e.detail;
-                                                const attendees: Attendee[] = [];
-                                                for (let people of peoples) {
-                                                    if (people.id && people.displayName) {
-                                                        const obj: Attendee = { address: people.id, name: people.displayName, required: false };
-                                                        attendees.push(obj);
-                                                    }
-                                                }
-                                                handleInputChangeCreate('attendees', attendees);
-                                            }
-                                            }></PeoplePicker>
-                                    </Field>
-                                    <Field label="Online Meeting">
-                                        <Switch
-                                            checked={formDataEdit.isOnlineMeeting}
-                                            onChange={(e) => handleInputChangeCreate('isOnlineMeeting', e.target.checked)}
-                                        />
-                                    </Field>
-                                    <Field label="Meeting Provider">
-                                        <Dropdown
-                                            disabled={!formDataEdit.isOnlineMeeting}
-                                            value={formDataEdit.onlineMeetingProvider}
-                                            onActiveOptionChange={(_, data) => {
-                                                if (data?.nextOption?.value) {
-                                                    handleInputChangeCreate('onlineMeetingProvider', data.nextOption.value)
-                                                }
-                                            }}
-                                        >
-                                            <Option value="teamsForBusiness">Microsoft Teams</Option>
-                                            <Option value="skypeForBusiness">Skype for Business</Option>
-                                        </Dropdown>
-                                    </Field>
-                                </div>
-                            </DialogContent>
-                            <DialogActions>
-                                <Button appearance="secondary" onClick={() => setIsEditDialogOpen(false)}>Cancel</Button>
-                                <Button appearance="primary" onClick={handleUpdateSubmit}>Update Event</Button>
-                            </DialogActions>
-                        </DialogBody>
-                    </DialogSurface>
-                </Dialog>
-
+                <Button
+                    icon={<Edit24Regular />}
+                    appearance="subtle"
+                    style={{
+                        padding: '4px'
+                    }}
+                    onClick={() => {
+                        // 预填充当前事件数据
+                        setFormData({
+                            eventId: currentEvent.id,
+                            subject: currentEvent.subject,
+                            body: currentEvent.body?.content || '',
+                            startDate: new Date(currentEvent.start.dateTime).toISOString().split('T')[0],
+                            startTime: new Date(currentEvent.start.dateTime).toTimeString().split(' ')[0].substring(0, 5),
+                            endDate: new Date(currentEvent.end.dateTime).toISOString().split('T')[0],
+                            endTime: new Date(currentEvent.end.dateTime).toTimeString().split(' ')[0].substring(0, 5),
+                            location: currentEvent.location?.displayName || '',
+                            attendees: currentEvent.attendees
+                                ?.filter(a => a.type === "required")
+                                ?.map(a => ({
+                                    address: a.emailAddress.address,
+                                    name: a.emailAddress.name,
+                                })) || [],
+                            optionAttendees: currentEvent.attendees
+                                ?.filter(a => a.type !== "required")
+                                ?.map(a => ({
+                                    address: a.emailAddress.address,
+                                    name: a.emailAddress.name,
+                                })) || [],
+                            isOnlineMeeting: currentEvent.isOnlineMeeting || false,
+                            onlineMeetingProvider: currentEvent.onlineMeetingProvider || 'teamsForBusiness'
+                        });
+                        setIsDialogOpen(true);
+                    }}
+                />
                 <Button
                     icon={<Delete24Regular />}
                     appearance="subtle"
@@ -659,10 +466,10 @@ export const CalendarPage: React.FunctionComponent = () => {
     interface Attendee {
         address: string;
         name: string;
-        required: boolean;
     }
 
-    const [formDataCreate, setFormDataCreate] = useState<{
+    const [formData, setFormData] = useState<{
+        eventId: string | undefined;
         subject: string;
         body: string;
         startDate: string;
@@ -671,9 +478,11 @@ export const CalendarPage: React.FunctionComponent = () => {
         endTime: string;
         location: string;
         attendees: Attendee[];
+        optionAttendees: Attendee[];
         isOnlineMeeting: boolean;
         onlineMeetingProvider: string;
     }>({
+        eventId: undefined,
         subject: '',
         body: '',
         startDate: '',
@@ -682,12 +491,13 @@ export const CalendarPage: React.FunctionComponent = () => {
         endTime: '',
         location: '',
         attendees: [],
+        optionAttendees: [],
         isOnlineMeeting: false,
         onlineMeetingProvider: 'teamsForBusiness'
     });
 
-    const handleInputChangeCreate = (field: string, value: any) => {
-        setFormDataCreate(prev => ({
+    const handleInputChange = (field: string, value: any) => {
+        setFormData(prev => ({
             ...prev,
             [field]: value
         }));
@@ -695,38 +505,54 @@ export const CalendarPage: React.FunctionComponent = () => {
 
     const handleSubmit = async () => {
         const event = {
-            subject: formDataCreate.subject,
+            subject: formData.subject,
             body: {
                 contentType: "HTML",
-                content: formDataCreate.body
+                content: formData.body
             },
             start: {
-                dateTime: `${formDataCreate.startDate}T${formDataCreate.startTime}`,
+                dateTime: `${formData.startDate}T${formData.startTime}`,
                 timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
             },
             end: {
-                dateTime: `${formDataCreate.endDate}T${formDataCreate.endTime}`,
+                dateTime: `${formData.endDate}T${formData.endTime}`,
                 timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
             },
             location: {
-                displayName: formDataCreate.location
+                displayName: formData.location
             },
-            attendees: formDataCreate.attendees.map(attendee => ({
-                emailAddress: {
-                    address: attendee.address,
-                    name: attendee.name,
-                },
-                type: attendee.required ? "required" : "optional",
-            })),
-            isOnlineMeeting: formDataCreate.isOnlineMeeting,
-            onlineMeetingProvider: formDataCreate.onlineMeetingProvider
+            attendees: [
+                ...formData.attendees.map(attendee => ({
+                    emailAddress: {
+                        address: attendee.address,
+                        name: attendee.name,
+                    },
+                    type: "required",
+                })),
+                ...formData.optionAttendees.map(attendee => ({
+                    emailAddress: {
+                        address: attendee.address,
+                        name: attendee.name,
+                    },
+                    type: "optional",
+                }))
+            ],
+            isOnlineMeeting: formData.isOnlineMeeting,
+            onlineMeetingProvider: formData.onlineMeetingProvider
         };
 
         try {
             const provider = Providers.globalProvider;
             const graph = provider.graph;
-            const response = await graph.api('/me/calendar/events')
-                .post(event);
+            const eventId = formData.eventId;
+            if (eventId) {
+                const response = await graph.api(`/me/calendar/events/${eventId}`)
+                    .patch(event);
+            }
+            else {
+                const response = await graph.api('/me/calendar/events')
+                    .post(event);
+            }
             setIsDialogOpen(false);
             setRefreshKey(prev => prev + 1); // Refresh calendar
         } catch (error) {
@@ -772,6 +598,22 @@ export const CalendarPage: React.FunctionComponent = () => {
                                             justifyContent: 'center',
                                             gap: '8px'
                                         }}
+                                        onClick={() => {
+                                            setFormData({
+                                                eventId: undefined,
+                                                subject: '',
+                                                body: '',
+                                                startDate: '',
+                                                startTime: '',
+                                                endDate: '',
+                                                endTime: '',
+                                                location: '',
+                                                attendees: [],
+                                                optionAttendees: [],
+                                                isOnlineMeeting: false,
+                                                onlineMeetingProvider: 'teamsForBusiness'
+                                            });
+                                        }}
                                     >
                                         Add Agenda
                                     </Button>
@@ -783,29 +625,29 @@ export const CalendarPage: React.FunctionComponent = () => {
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                                                 <Field label="Subject">
                                                     <Input
-                                                        value={formDataCreate.subject}
-                                                        onChange={(e) => handleInputChangeCreate('subject', e.target.value)}
+                                                        value={formData.subject}
+                                                        onChange={(e) => handleInputChange('subject', e.target.value)}
                                                     />
                                                 </Field>
                                                 <Field label="Description">
                                                     <Textarea
-                                                        value={formDataCreate.body}
-                                                        onChange={(e) => handleInputChangeCreate('body', e.target.value)}
+                                                        value={formData.body}
+                                                        onChange={(e) => handleInputChange('body', e.target.value)}
                                                     />
                                                 </Field>
                                                 <div style={{ display: 'flex', gap: '16px' }}>
                                                     <Field label="Start Date">
                                                         <Input
                                                             type="date"
-                                                            value={formDataCreate.startDate}
-                                                            onChange={(e) => handleInputChangeCreate('startDate', e.target.value)}
+                                                            value={formData.startDate}
+                                                            onChange={(e) => handleInputChange('startDate', e.target.value)}
                                                         />
                                                     </Field>
                                                     <Field label="Start Time">
                                                         <Input
                                                             type="time"
-                                                            value={formDataCreate.startTime}
-                                                            onChange={(e) => handleInputChangeCreate('startTime', e.target.value)}
+                                                            value={formData.startTime}
+                                                            onChange={(e) => handleInputChange('startTime', e.target.value)}
                                                         />
                                                     </Field>
                                                 </div>
@@ -813,65 +655,75 @@ export const CalendarPage: React.FunctionComponent = () => {
                                                     <Field label="End Date">
                                                         <Input
                                                             type="date"
-                                                            value={formDataCreate.endDate}
-                                                            onChange={(e) => handleInputChangeCreate('endDate', e.target.value)}
+                                                            value={formData.endDate}
+                                                            onChange={(e) => handleInputChange('endDate', e.target.value)}
                                                         />
                                                     </Field>
                                                     <Field label="End Time">
                                                         <Input
                                                             type="time"
-                                                            value={formDataCreate.endTime}
-                                                            onChange={(e) => handleInputChangeCreate('endTime', e.target.value)}
+                                                            value={formData.endTime}
+                                                            onChange={(e) => handleInputChange('endTime', e.target.value)}
                                                         />
                                                     </Field>
                                                 </div>
                                                 <Field label="Location">
                                                     <Input
-                                                        value={formDataCreate.location}
-                                                        onChange={(e) => handleInputChangeCreate('location', e.target.value)}
+                                                        value={formData.location}
+                                                        onChange={(e) => handleInputChange('location', e.target.value)}
                                                     />
                                                 </Field>
                                                 <Field label="Required Attendees">
-                                                    <PeoplePicker selectionChanged={(e) => {
-                                                        const peoples = e.detail;
-                                                        const attendees: Attendee[] = [];
-                                                        for (let people of peoples) {
-                                                            if (people.id && people.displayName) {
-                                                                const obj: Attendee = { address: people.id, name: people.displayName, required: true };
-                                                                attendees.push(obj);
-                                                            }
+                                                    <PeoplePicker
+                                                        defaultSelectedUserIds={
+                                                            formData.attendees
+                                                                .map(a => a.address)
                                                         }
-                                                        handleInputChangeCreate('attendees', attendees);
-                                                    }
-                                                    }></PeoplePicker>
+                                                        selectionChanged={(e) => {
+                                                            const peoples = e.detail;
+                                                            const attendees: Attendee[] = [];
+                                                            for (let people of peoples) {
+                                                                if (people.id && people.displayName) {
+                                                                    const obj: Attendee = { address: people.id, name: people.displayName };
+                                                                    attendees.push(obj);
+                                                                }
+                                                            }
+                                                            handleInputChange('attendees', attendees);
+                                                        }
+                                                        }></PeoplePicker>
                                                 </Field>
                                                 <Field label="Optional Attendees">
-                                                    <PeoplePicker selectionChanged={(e) => {
-                                                        const peoples = e.detail;
-                                                        const attendees: Attendee[] = [];
-                                                        for (let people of peoples) {
-                                                            if (people.id && people.displayName) {
-                                                                const obj: Attendee = { address: people.id, name: people.displayName, required: false };
-                                                                attendees.push(obj);
-                                                            }
+                                                    <PeoplePicker
+                                                        defaultSelectedUserIds={
+                                                            formData.optionAttendees
+                                                                .map(a => a.address)
                                                         }
-                                                        handleInputChangeCreate('attendees', attendees);
-                                                    }
-                                                    }></PeoplePicker>
+                                                        selectionChanged={(e) => {
+                                                            const peoples = e.detail;
+                                                            const attendees: Attendee[] = [];
+                                                            for (let people of peoples) {
+                                                                if (people.id && people.displayName) {
+                                                                    const obj: Attendee = { address: people.id, name: people.displayName };
+                                                                    attendees.push(obj);
+                                                                }
+                                                            }
+                                                            handleInputChange('optionAttendees', attendees);
+                                                        }
+                                                        }></PeoplePicker>
                                                 </Field>
                                                 <Field label="Online Meeting">
                                                     <Switch
-                                                        checked={formDataCreate.isOnlineMeeting}
-                                                        onChange={(e) => handleInputChangeCreate('isOnlineMeeting', e.target.checked)}
+                                                        checked={formData.isOnlineMeeting}
+                                                        onChange={(e) => handleInputChange('isOnlineMeeting', e.target.checked)}
                                                     />
                                                 </Field>
                                                 <Field label="Meeting Provider">
                                                     <Dropdown
-                                                        disabled={!formDataCreate.isOnlineMeeting}
-                                                        value={formDataCreate.onlineMeetingProvider}
+                                                        disabled={!formData.isOnlineMeeting}
+                                                        value={formData.onlineMeetingProvider}
                                                         onActiveOptionChange={(_, data) => {
                                                             if (data?.nextOption?.value) {
-                                                                handleInputChangeCreate('onlineMeetingProvider', data.nextOption.value)
+                                                                handleInputChange('onlineMeetingProvider', data.nextOption.value)
                                                             }
                                                         }}
                                                     >
@@ -883,7 +735,9 @@ export const CalendarPage: React.FunctionComponent = () => {
                                         </DialogContent>
                                         <DialogActions>
                                             <Button appearance="secondary" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
-                                            <Button appearance="primary" onClick={handleSubmit}>Create Event</Button>
+                                            <Button appearance="primary" onClick={handleSubmit}>
+                                                {formData.eventId ? 'Update Event' : 'Create Event'}
+                                            </Button>
                                         </DialogActions>
                                     </DialogBody>
                                 </DialogSurface>
