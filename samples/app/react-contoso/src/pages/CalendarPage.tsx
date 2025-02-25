@@ -620,7 +620,9 @@ export const CalendarPage: React.FunctionComponent = () => {
                                 </DialogTrigger>
                                 <DialogSurface>
                                     <DialogBody>
-                                        <DialogTitle>Create New Event</DialogTitle>
+                                        <DialogTitle>
+                                            {formData.eventId ? 'Update Event' : 'Create New Event'}
+                                        </DialogTitle>
                                         <DialogContent>
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                                                 <Field label="Subject">
